@@ -22,14 +22,13 @@ def get_movie(request, film_id):
     categorias_qs = Category.objects.filter(categoryfilm__film=film).distinct()
     categorias = [{"id": c.pk, "nombre": c.title} for c in categorias_qs]
 
-    director_obj = {"id": None, "nombre": film.director or ""}
 
     data = {
         "id": film.pk,
         "title": film.title,
         "year": film.year,
         "duration": film.length,
-        "director": director_obj,
+        "director": film.director,
         "description": film.description,
         "categorias": categorias,
         "image_url": film.image_url,
