@@ -8,5 +8,3 @@ admin.site.register(CategoryFilm)
 admin.site.register(FavoriteFilm)
 admin.site.register(WishlistFilm)
 admin.site.register(WatchedFilm)
-admin.site.register(Comment)
-# Register your models here.
