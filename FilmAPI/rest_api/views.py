@@ -1,22 +1,21 @@
+from django.shortcuts import render
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Film, WatchedFilm, FilmBoxUser
 from .serializers import FilmSerializer
 
-def get_user_from_token(request):
-    auth = request.headers.get('Authorization')
 
-    if not auth or not auth.startswith('Bearer '):
+def get_authenticated_user(request):
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
         return None
-
-    token = auth.split(' ')[1]
-
+    token = auth[len("Bearer "):].strip()
     try:
         return FilmBoxUser.objects.get(session_token=token)
     except FilmBoxUser.DoesNotExist:
         return None
-
 
 class GetMovieView(APIView):
 
@@ -35,7 +34,7 @@ class GetMovieView(APIView):
 class   MarkWatchedView(APIView):
 
     def put(self, request, movie_id):
-        user = get_user_from_token(request)
+        user = get_authenticated_user(request)
         if not user:
             return Response(
                 {"detail": "User not authenticated."},
@@ -60,4 +59,41 @@ class   MarkWatchedView(APIView):
         return Response(
             {"detail": "Film marked as watched for the first time."},
             status=status.HTTP_201_CREATED
+        )
+
+
+class DeleteWatchedView(APIView):
+
+    def delete(self, request, movie_id):
+        # 401 – Usuario no autenticado
+        user = get_authenticated_user(request)
+        if user is None:
+            return Response(
+                {"detail": "User not authenticated."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # 404 – La película no existe
+        try:
+            film = Film.objects.get(pk=movie_id)
+        except Film.DoesNotExist:
+            return Response(
+                {"detail": "Movie not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 404 – La película no estaba en watched de este usuario
+        try:
+            entry = WatchedFilm.objects.get(user=user, film=film)
+        except WatchedFilm.DoesNotExist:
+            return Response(
+                {"detail": "Movie not in watched list."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 200 – Se elimina
+        entry.delete()
+        return Response(
+            {"detail": "Movie removed from watched list."},
+            status=status.HTTP_200_OK
         )
