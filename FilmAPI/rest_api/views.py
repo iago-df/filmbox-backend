@@ -121,3 +121,46 @@ class DeleteLikeView(APIView):
             {"detail": "Like deleted"},
             status=status.HTTP_204_NO_CONTENT
         )
+
+
+class DeleteWatchlistView(APIView):
+
+    def delete(self, request, movie_id):
+        # 401
+        user = get_authenticated_user(request)
+        if not user:
+            return Response(
+                {"detail": "User not authenticated."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # 404
+        try:
+            film = Film.objects.get(pk=movie_id)
+        except Film.DoesNotExist:
+            return Response(
+                {"detail": "Movie not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user_qs = WishlistFilm.objects.filter(user=user, film=film)
+        if user_qs.exists():
+            # 200
+            user_qs.delete()
+            return Response(
+                {"detail": "Movie removed from watchlist."},
+                status=status.HTTP_200_OK
+            )
+
+        if WishlistFilm.objects.filter(film=film).exists():
+            # 403
+            return Response(
+                {"detail": "User cannot modify this resource."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # 404 - no esta en ña watchlist
+        return Response(
+            {"detail": "Movie not in watchlist."},
+            status=status.HTTP_404_NOT_FOUND
+        )
