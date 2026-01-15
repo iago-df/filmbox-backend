@@ -5,7 +5,7 @@ from .models import Film, WatchedFilm, FilmBoxUser
 from .serializers import FilmSerializer
 
 
-from .models import FavoriteFilm, FilmBoxUser
+from .models import FavoriteFilm, FilmBoxUser, WishlistFilm
 
 def get_authenticated_user(request):
     auth = request.headers.get("Authorization")
@@ -120,4 +120,47 @@ class DeleteLikeView(APIView):
         return Response(
             {"detail": "Like deleted"},
             status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class DeleteWishlistView(APIView):
+
+    def delete(self, request, movie_id):
+        # 401
+        user = get_authenticated_user(request)
+        if not user:
+            return Response(
+                {"detail": "User not authenticated."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # 404
+        try:
+            film = Film.objects.get(pk=movie_id)
+        except Film.DoesNotExist:
+            return Response(
+                {"detail": "Movie not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user_qs = WishlistFilm.objects.filter(user=user, film=film)
+        if user_qs.exists():
+            # 200
+            user_qs.delete()
+            return Response(
+                {"detail": "Movie removed from wishlist."},
+                status=status.HTTP_200_OK
+            )
+
+        if WishlistFilm.objects.filter(film=film).exists():
+            # 403
+            return Response(
+                {"detail": "User cannot modify this resource."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # 404 - no esta en ña wishlist
+        return Response(
+            {"detail": "Movie not in wishlist."},
+            status=status.HTTP_404_NOT_FOUND
         )
