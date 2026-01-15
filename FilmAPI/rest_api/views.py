@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-
 from .models import Film, FavoriteFilm, FilmBoxUser
 
 
@@ -11,7 +10,6 @@ def get_user_from_token(request):
    if not auth_header:
        return None
 
-
    try:
        token = auth_header.split(' ')[1]
        return FilmBoxUser.objects.get(session_token=token)
@@ -19,13 +17,8 @@ def get_user_from_token(request):
        return None
 
 
-
-
-
-
 class LikeFilmView(APIView):
    def put(self, request, film_id):
-
 
        user = get_user_from_token(request)
        if not user:
@@ -33,30 +26,15 @@ class LikeFilmView(APIView):
                status=status.HTTP_401_UNAUTHORIZED,
            )
 
-
-
        try:
            film = Film.objects.get(id=film_id)
        except Film.DoesNotExist:
-           return Response(
-               status=status.HTTP_404_NOT_FOUND,
-           )
-
-
-
-       if film.year < 1800:
-           return Response(
-           status=status.HTTP_422_UNPROCESSABLE_ENTITY
-       )
-
-
+           return Response(status=status.HTTP_404_NOT_FOUND,)
 
        if FavoriteFilm.objects.filter(user=user,film=film).exists():
            return Response(
                status=status.HTTP_200_OK
            )
-
-
 
        FavoriteFilm.objects.create(
            user=user,
