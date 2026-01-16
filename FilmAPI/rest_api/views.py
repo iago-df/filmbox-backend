@@ -10,7 +10,6 @@ from .models import (
     FavoriteFilm,
     FilmBoxUser,
     WishlistFilm,
-    FilmBoxUser,
 )
 from .serializers import FilmSerializer, UserSerializer
 
@@ -26,8 +25,58 @@ def get_authenticated_user(request):
         return None
 
 # --- Views ---
+class LikeFilmView(APIView):
+    def put(self, request, film_id):
+        user = get_authenticated_user(request)
+        if not user:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            film = Film.objects.get(id=film_id)
+        except Film.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if FavoriteFilm.objects.filter(user=user, film=film).exists():
+            return Response(status=status.HTTP_200_OK)
+
+        FavoriteFilm.objects.create(user=user, film=film)
+        return Response(status=status.HTTP_201_CREATED)
 
 class MovieReviewView(APIView):
+    def get(self, request, id):
+        try:
+            film = Film.objects.get(id=id)
+        except Film.DoesNotExist:
+            return Response(
+                {"error": "Film not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        comments = (
+            Comment.objects
+            .filter(film=film)
+            .select_related("user")
+            .order_by("-created_at")[:3]
+        )
+
+        reviews = []
+        for comment in comments:
+            reviews.append({
+                "author": comment.user.username,
+                "rating": comment.score,
+                "comment": comment.content,
+                "date": comment.created_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+            })
+
+        return Response(
+            {
+                "movie_id": film.id,
+                "total_reviews": Comment.objects.filter(film=film).count(),
+                "preview": reviews
+            },
+            status=status.HTTP_200_OK
+        )
+
     def put(self, request, id):
         user = get_authenticated_user(request)
         if not user:
@@ -50,10 +99,7 @@ class MovieReviewView(APIView):
             return Response({"error": "rating must be a number"}, status=status.HTTP_400_BAD_REQUEST)
 
         if rating < 1 or rating > 5 or (rating * 2 != int(rating * 2)):
-            return Response(
-                {"error": "rating must be between 1 and 5 (integers or .5)"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": "rating must be between 1 and 5 (integers or .5)"}, status=status.HTTP_400_BAD_REQUEST)
 
         if comment_text is None or not str(comment_text).strip():
             return Response({"error": "comment is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -72,8 +118,7 @@ class MovieReviewView(APIView):
                     "comment": existing_comment.content,
                     "date": existing_comment.updated_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
                 },
-                status=status.HTTP_200_OK
-            )
+                status=status.HTTP_200_OK)
 
         new_comment = Comment.objects.create(
             user=user,
@@ -108,9 +153,7 @@ class MarkWatchedView(APIView):
         user = get_authenticated_user(request)
         if not user:
             return Response(
-                {"detail": "User not authenticated."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+                {"detail": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
             film = Film.objects.get(id=movie_id)
@@ -155,7 +198,23 @@ class DeleteLikeView(APIView):
         return Response({"detail": "Like deleted"}, status=status.HTTP_204_NO_CONTENT)
 
 
-class DeleteWishlistView(APIView):
+class WishlistFilmView(APIView):
+    def put(self, request, movie_id):
+        user = get_authenticated_user(request)
+        if not user:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            film = Film.objects.get(id=movie_id)
+        except Film.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if WishlistFilm.objects.filter(user=user, film=film).exists():
+            return Response(status=status.HTTP_200_OK)
+
+        WishlistFilm.objects.create(user=user, film=film)
+        return Response(status=status.HTTP_201_CREATED)
+
     def delete(self, request, movie_id):
         user = get_authenticated_user(request)
         if not user:
