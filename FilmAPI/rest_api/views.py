@@ -166,3 +166,34 @@ class SearchMoviesView(APIView):
         films = Film.objects.filter(title__icontains=query).order_by('id')
         serializer = FilmSerializer(films, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchUsersView(APIView):
+    def get(self, request):
+        query = request.query_params.get('query')
+
+        if not query or not query.strip():
+            return Response(
+                {"error": "Invalid query parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            users = FilmBoxUser.objects.filter(username__icontains=query).order_by('id')
+
+            results = [
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "avatar_url": "https://..."
+                }
+                for user in users
+            ]
+
+            return Response(results, status=status.HTTP_200_OK)
+
+        except Exception:
+            return Response(
+                {"error": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
