@@ -11,7 +11,7 @@ from .models import (
     FilmBoxUser,
     WishlistFilm,
 )
-from .serializers import FilmSerializer
+from .serializers import FilmSerializer, UserSerializer
 
 def get_authenticated_user(request):
     auth = request.headers.get("Authorization")
@@ -25,10 +25,24 @@ def get_authenticated_user(request):
         return None
 
 # --- Views ---
+class LikeFilmView(APIView):
+    def put(self, request, film_id):
+        user = get_authenticated_user(request)
+        if not user:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+        try:
+            film = Film.objects.get(id=film_id)
+        except Film.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if FavoriteFilm.objects.filter(user=user, film=film).exists():
+            return Response(status=status.HTTP_200_OK)
+
+        FavoriteFilm.objects.create(user=user, film=film)
+        return Response(status=status.HTTP_201_CREATED)
 
 class MovieReviewView(APIView):
-
     def get(self, request, id):
         try:
             film = Film.objects.get(id=id)
@@ -96,22 +110,31 @@ class MovieReviewView(APIView):
             existing_comment.score = rating
             existing_comment.content = comment_text
             existing_comment.save()
-            return Response({
-                "author": user.username,
-                "rating": existing_comment.score,
-                "comment": existing_comment.content,
-                "date": existing_comment.updated_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
-            }, status=status.HTTP_200_OK)
+
+            return Response(
+                {
+                    "author": user.username,
+                    "rating": existing_comment.score,
+                    "comment": existing_comment.content,
+                    "date": existing_comment.updated_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                status=status.HTTP_200_OK)
 
         new_comment = Comment.objects.create(
-            user=user, film=film, score=rating, content=comment_text
+            user=user,
+            film=film,
+            score=rating,
+            content=comment_text
         )
-        return Response({
-            "author": user.username,
-            "rating": new_comment.score,
-            "comment": new_comment.content,
-            "date": new_comment.created_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "author": user.username,
+                "rating": new_comment.score,
+                "comment": new_comment.content,
+                "date": new_comment.created_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 class GetMovieView(APIView):
@@ -129,7 +152,8 @@ class MarkWatchedView(APIView):
     def put(self, request, movie_id):
         user = get_authenticated_user(request)
         if not user:
-            return Response({"detail": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"detail": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
             film = Film.objects.get(id=movie_id)
@@ -172,7 +196,6 @@ class DeleteLikeView(APIView):
 
         like.delete()
         return Response({"detail": "Like deleted"}, status=status.HTTP_204_NO_CONTENT)
-
 
 
 class WishlistFilmView(APIView):
@@ -220,3 +243,23 @@ class SearchMoviesView(APIView):
         serializer = FilmSerializer(films, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class SearchUsersView(APIView):
+    def get(self, request):
+        query = request.query_params.get('query')
+
+        if not query or not query.strip():
+            return Response(
+                {"error": "Invalid query parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            users = FilmBoxUser.objects.filter(username__icontains=query).order_by('id')
+            serializer = UserSerializer(users, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception:
+            return Response(
+                {"error": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

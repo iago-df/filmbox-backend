@@ -4,8 +4,10 @@ from .views import DeleteLikeView
 from .views import GetMovieView
 from .views import MarkWatchedView
 from .views import DeleteWatchedView
-from .views import SearchMoviesView
 from .views import WishlistFilmView
+from .views import SearchMoviesView
+from .views import LikeFilmView
+from .views import SearchUsersView
 
 urlpatterns = [
     path('movies/<int:film_id>', GetMovieView.as_view(), name='get_movie'),
@@ -14,5 +16,7 @@ urlpatterns = [
     path('favorites/<int:movie_id>', DeleteLikeView.as_view(), name='delete_like'),
     path('movies/<int:id>/reviews', MovieReviewView.as_view(), name='movie_review'),
     path('movies', SearchMoviesView.as_view(), name='search_movies'),
-    path('wishlist/<int:movie_id>', WishlistFilmView.as_view(), name='wishlist_movies'),
+    path('likes/<int:film_id>', LikeFilmView.as_view(), name='like_film'),
+    path('wishlist/<int:movie_id>', WishlistFilmView.as_view(), name='wishlist'),
+    path('users', SearchUsersView.as_view(), name='search_users'),
 ]
