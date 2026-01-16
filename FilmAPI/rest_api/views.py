@@ -26,6 +26,35 @@ def get_authenticated_user(request):
 
 # --- Views ---
 
+
+class LikeFilmView(APIView):
+   def put(self, request, film_id):
+
+       user = get_authenticated_user(request)
+       if not user:
+           return Response(
+               status=status.HTTP_401_UNAUTHORIZED,
+           )
+
+       try:
+           film = Film.objects.get(id=film_id)
+       except Film.DoesNotExist:
+           return Response(status=status.HTTP_404_NOT_FOUND,)
+
+       if FavoriteFilm.objects.filter(user=user,film=film).exists():
+           return Response(
+               status=status.HTTP_200_OK
+           )
+
+       FavoriteFilm.objects.create(
+           user=user,
+           film=film
+       )
+
+       return Response(
+           status=status.HTTP_201_CREATED
+       )
+
 class MovieReviewView(APIView):
 
     def get(self, request, id):
