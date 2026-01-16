@@ -10,6 +10,7 @@ from .models import (
     FavoriteFilm,
     FilmBoxUser,
     WishlistFilm,
+    FilmBoxUser,
 )
 from .serializers import FilmSerializer, UserSerializer
 
@@ -49,7 +50,10 @@ class MovieReviewView(APIView):
             return Response({"error": "rating must be a number"}, status=status.HTTP_400_BAD_REQUEST)
 
         if rating < 1 or rating > 5 or (rating * 2 != int(rating * 2)):
-            return Response({"error": "rating must be between 1 and 5 (integers or .5)"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "rating must be between 1 and 5 (integers or .5)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if comment_text is None or not str(comment_text).strip():
             return Response({"error": "comment is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -60,22 +64,32 @@ class MovieReviewView(APIView):
             existing_comment.score = rating
             existing_comment.content = comment_text
             existing_comment.save()
-            return Response({
-                "author": user.username,
-                "rating": existing_comment.score,
-                "comment": existing_comment.content,
-                "date": existing_comment.updated_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
-            }, status=status.HTTP_200_OK)
+
+            return Response(
+                {
+                    "author": user.username,
+                    "rating": existing_comment.score,
+                    "comment": existing_comment.content,
+                    "date": existing_comment.updated_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                status=status.HTTP_200_OK
+            )
 
         new_comment = Comment.objects.create(
-            user=user, film=film, score=rating, content=comment_text
+            user=user,
+            film=film,
+            score=rating,
+            content=comment_text
         )
-        return Response({
-            "author": user.username,
-            "rating": new_comment.score,
-            "comment": new_comment.content,
-            "date": new_comment.created_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "author": user.username,
+                "rating": new_comment.score,
+                "comment": new_comment.content,
+                "date": new_comment.created_at.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 class GetMovieView(APIView):
@@ -93,7 +107,10 @@ class MarkWatchedView(APIView):
     def put(self, request, movie_id):
         user = get_authenticated_user(request)
         if not user:
-            return Response({"detail": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"detail": "User not authenticated."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
         try:
             film = Film.objects.get(id=movie_id)
@@ -166,7 +183,6 @@ class SearchMoviesView(APIView):
         films = Film.objects.filter(title__icontains=query).order_by('id')
         serializer = FilmSerializer(films, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class SearchUsersView(APIView):
     def get(self, request):
