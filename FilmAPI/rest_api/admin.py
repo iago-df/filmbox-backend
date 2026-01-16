@@ -1,3 +1,11 @@
 from django.contrib import admin
+from .models import Category, FilmBoxUser , Film, CategoryFilm, FavoriteFilm, WishlistFilm, WatchedFilm, Comment
 
-# Register your models here.
+admin.site.register(Category)
+admin.site.register(FilmBoxUser)
+admin.site.register(Film)
+admin.site.register(CategoryFilm)
+admin.site.register(FavoriteFilm)
+admin.site.register(WishlistFilm)
+admin.site.register(WatchedFilm)
+admin.site.register(Comment)
