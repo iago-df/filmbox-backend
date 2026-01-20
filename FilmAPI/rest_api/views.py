@@ -267,7 +267,7 @@ class SearchUsersView(APIView):
             )
 
 class UserRegistrationView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = FilmBoxUser.objects.all()
     serializer_class = UserRegistrationSerializer
 
     def create(self, request, *args, **kwargs):
@@ -275,4 +275,7 @@ class UserRegistrationView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({
+            "username": serializer.data.get("username"),
+            "detail": "User created successfully"
+        }, status=status.HTTP_201_CREATED, headers=headers)
