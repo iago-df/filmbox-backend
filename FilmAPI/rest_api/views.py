@@ -2,6 +2,7 @@ from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import uuid
 
 from .models import (
     Film,
@@ -264,3 +265,29 @@ class SearchUsersView(APIView):
                 {"error": "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class LogoutView(APIView):
+    def post(self, request):
+        token = request.data.get("token")
+
+        if not token or not str(token).strip():
+            return Response(
+                {"error": "Invalid or expired token"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        try:
+            user = FilmBoxUser.objects.get(session_token=token)
+        except FilmBoxUser.DoesNotExist:
+            return Response(
+                {"error": "Invalid or expired token"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        user.session_token = f"invalid-{uuid.uuid4()}"
+        user.save(update_fields=["session_token"])
+
+        return Response(
+            {"detail": "Logout successful"},
+            status=status.HTTP_200_OK
+        )
