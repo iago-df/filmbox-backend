@@ -7,6 +7,7 @@ from .views import (
     GetMovieView,
     WatchedView,
     WishlistFilmView,
+    WishlistView,
     SearchMoviesView,
     SearchUsersView,
     UserRegistrationView,
@@ -24,6 +25,7 @@ urlpatterns = [
 
     path("watched/<int:movie_id>", WatchedView.as_view(), name="watched"),
     path("favorites/<int:movie_id>", FavoriteFilmView.as_view(), name="favorite_film"),
+    path("wishlist", WishlistView.as_view(), name="wishlist_list"),
     path("wishlist/<int:movie_id>", WishlistFilmView.as_view(), name="wishlist"),
 
     path("users", SearchUsersView.as_view(), name="search_users"),
