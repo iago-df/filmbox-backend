@@ -332,6 +332,17 @@ class FavoriteListView(APIView):
 # WISHLIST
 # =========================
 
+class WishlistView(APIView):
+    authentication_classes = [FilmBoxAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        wishlist = WishlistFilm.objects.filter(user=user).select_related('film')
+        films = [w.film for w in wishlist]
+        serializer = FilmSerializer(films, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class WishlistFilmView(APIView):
     authentication_classes = [FilmBoxAuthentication]
     permission_classes = [IsAuthenticated]
