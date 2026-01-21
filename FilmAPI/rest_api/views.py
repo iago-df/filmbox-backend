@@ -273,7 +273,19 @@ class GetMovieView(APIView):
 # WATCHED
 # =========================
 
-class WatchedView(APIView):
+class WatchedListView(APIView):
+    authentication_classes = [FilmBoxAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        watched = WatchedFilm.objects.filter(user=user).select_related("film")
+        films = [w.film for w in watched]
+        serializer = FilmSerializer(films, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class WatchedDetailView(APIView):
     authentication_classes = [FilmBoxAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -317,13 +329,6 @@ class WatchedView(APIView):
             {"detail": "Movie removed from watched list."},
             status=status.HTTP_200_OK,
         )
-
-    def get(self, request):
-        user = request.user
-        watched = WatchedFilm.objects.filter(user=user).select_related("film")
-        films = [w.film for w in watched]
-        serializer = FilmSerializer(films, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
