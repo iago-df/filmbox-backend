@@ -25,6 +25,14 @@ class FilmSerializer(serializers.ModelSerializer):
         qs = Category.objects.filter(categoryfilm__film=obj).distinct()
         return CategorySerializer(qs, many=True).data
 
+class FilmLiteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk')
+    duration = serializers.IntegerField(source='length')
+
+    class Meta:
+        model = Film
+        fields = ('id', 'title', 'year', 'duration', 'image_url')
+
 
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk')

@@ -20,6 +20,7 @@ from .models import (
 )
 from .serializers import (
     FilmSerializer,
+    FilmLiteSerializer,
     CategorySerializer,
     UserSerializer,
     UserRegistrationSerializer,
@@ -441,23 +442,18 @@ class SearchMoviesView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        query = request.query_params.get("query")
-        category_id = request.query_params.get("category")
+        query = request.query_params.get("query", "").strip()
+        if not query:
+            return Response([], status=status.HTTP_200_OK)
 
-        films = Film.objects.all().order_by("id")
+        films = (
+            Film.objects
+            .filter(title__icontains=query)
+            .only("id", "title", "year", "image_url", "length")
+            [:20]
+        )
 
-        if category_id:
-            films = films.filter(categoryfilm__category_id=category_id)
-
-        if query and query.strip():
-            films = films.filter(title__icontains=query)
-
-        if not query and not category_id:
-            # If no filter is provided, maybe return all movies or an empty list.
-            # For now, let's return all, but this could be changed.
-            pass
-
-        serializer = FilmSerializer(films, many=True)
+        serializer = FilmLiteSerializer(films, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
