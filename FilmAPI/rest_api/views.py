@@ -150,6 +150,7 @@ class CategoryMoviesView(APIView):
 
 # =========================
 # REVIEWS
+# Lectura y escritura de reseñas
 # =========================
 
 class MovieReviewView(APIView):
@@ -157,6 +158,7 @@ class MovieReviewView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request, id):
+        # Se valida la existencia de la película
         try:
             film = Film.objects.get(id=id)
         except Film.DoesNotExist:
@@ -165,8 +167,10 @@ class MovieReviewView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Parámetro opcional para mostrar todas las reviews
         show_all = request.query_params.get("all", "false").lower() == "true"
 
+        # Se obtienen las reviews más recientes
         comments = (
             Comment.objects
             .filter(film=film)
@@ -174,9 +178,11 @@ class MovieReviewView(APIView):
             .order_by("-created_at")
         )
 
+        # Si no se piden todas, se limita a 3
         if not show_all:
             comments = comments[:3]
 
+        # Se construye la respuesta manualmente
         reviews = [
             {
                 "author": comment.user.username,
@@ -202,6 +208,7 @@ class MovieReviewView(APIView):
     def put(self, request, id):
         user = request.user
 
+        # Validación de la película
         try:
             film = Film.objects.get(id=id)
         except Film.DoesNotExist:
@@ -213,6 +220,7 @@ class MovieReviewView(APIView):
         rating = request.data.get("rating")
         comment_text = request.data.get("comment")
 
+        # Validaciones de entrada
         if rating is None:
             return Response(
                 {"error": "rating is required"},
@@ -239,6 +247,7 @@ class MovieReviewView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Se crea o actualiza la review del usuario
         comment, created = Comment.objects.update_or_create(
             user=user,
             film=film,
